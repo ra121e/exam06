@@ -16,10 +16,27 @@ int	main(int ac, char **av)
 	if (!(port > 1024 && port < 49151))
 	{
 		write (2, "Fatal error\n", 12);
-		return (1);
+		exit (1);
 	}
 
 
+	struct sockaddr_in servaddr; 
+	bzero(&servaddr, sizeof(servaddr)); 
+
+	// assign IP, PORT 
+	servaddr.sin_family = AF_INET; 
+	servaddr.sin_addr.s_addr = htonl(2130706433); //127.0.0.1
+	servaddr.sin_port = htons(av[1]); 
+
+	// Binding newly created socket to given IP and verification 
+	if ((bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr))) != 0) { 
+		write (2, "Fatal error\n", 12);
+		exit (1);
+	} 
+	if (listen(sockfd, SOMAXCONN) != 0) {
+		write (2, "Fatal error\n", 12);
+		exit (1);
+	}
 
 
 	return (0);
