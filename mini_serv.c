@@ -1,10 +1,15 @@
-#include <stdlib.h>
-#include <unistd.h>
-
+#include <stdlib.h> // atoi
+#include <unistd.h> // read, write
+#include <sys/select.h> //fd_set
+#include <sys/socket.h> // socket, SOMAXCONN
 
 int	main(int ac, char **av)
 {
 	int	port;
+	fd_set	activefd;
+	fd_set	readfd;
+	fd_set	writefd;
+	
 
 	if (ac != 2)
 	{
