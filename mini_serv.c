@@ -59,11 +59,13 @@ int	main(int ac, char **av)
 		exit (1);
 	}
 
-	max_fd = 0;
+	max_fd = sockfd;
 	while (1)
 	{
 		readfd = activefd;
 		writefd = activefd;
+
+//		printf("max_fd: %d\n", max_fd);
 
 		if (select(max_fd + 1, &readfd, &writefd, NULL, NULL) < 0)
 		{
@@ -71,22 +73,27 @@ int	main(int ac, char **av)
 			exit (1);
 		}
 
-		printf("max_fd: %d\n", max_fd);
+//		printf("max_fd: %d\n", max_fd);
 
-		for (int fd =0; fd <= max_fd; ++fd)
+		for (int fd = 0; fd <= max_fd; ++fd)
 		{
+			if (!(FD_ISSET(fd, &readfd)))
+				continue ;	
+				
 			if (fd == sockfd)
 			{
 				struct sockaddr_in	clientaddr;
 				socklen_t			addrlen;
 				addrlen = sizeof (clientaddr);
-				clientfd = accept(sockfd, (struct sockaddr *)&servaddr, &addrlen);
+				clientfd = accept(sockfd, (struct sockaddr *)&clientaddr, &addrlen);
 
 				printf("clientfd: %d\n", clientfd);
 
-				if (clientfd < 0)
+				if (clientfd >= 0)
 				{
 					// register client
+					FD_SET(clientfd, &activefd);
+
 					break ;	
 				}
 			}
