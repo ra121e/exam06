@@ -3,9 +3,19 @@
 #include <sys/select.h> //fd_set
 #include <sys/socket.h> // socket, SOMAXCONN
 #include <strings.h> // bzero
+#include <string.h> //strlen
 #include <arpa/inet.h> // hotonl
 
 #include <stdio.h>
+
+void	broadcast(int exc_fd, int max_fd, fd_set *wfds, char *str)
+{
+	for (int fd = 0; fd <= max_fd; ++fd)
+	{
+		if (FD_ISSET(fd, wfds) && fd != exc_fd)
+			send (fd, str, strlen(str), 0);
+	}
+}
 
 int	main(int ac, char **av)
 {
@@ -16,6 +26,9 @@ int	main(int ac, char **av)
 	fd_set	activefd;
 	fd_set	readfd;
 	fd_set	writefd;
+	int		ids[65536];
+	int		count;
+	char	buf_write[42];
 	
 	if (ac != 2)
 	{
@@ -59,6 +72,7 @@ int	main(int ac, char **av)
 		exit (1);
 	}
 
+	count = 0;
 	max_fd = sockfd;
 	while (1)
 	{
@@ -94,6 +108,9 @@ int	main(int ac, char **av)
 					// register client
 					FD_SET(clientfd, &activefd);
 					max_fd = clientfd > max_fd ? clientfd : max_fd;
+					ids[fd] = count++;
+					sprintf(buf_write, "server: client %d just arrived\n", ids[fd]);
+					broadcast(fd, max_fd, &writefd, buf_write);
 					break ;	
 				}
 			}
