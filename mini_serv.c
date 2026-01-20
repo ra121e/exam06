@@ -93,7 +93,7 @@ int	main(int ac, char **av)
 				{
 					// register client
 					FD_SET(clientfd, &activefd);
-
+					max_fd = clientfd > max_fd ? clientfd : max_fd;
 					break ;	
 				}
 			}
