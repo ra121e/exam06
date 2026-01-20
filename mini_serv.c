@@ -5,15 +5,18 @@
 #include <strings.h> // bzero
 #include <arpa/inet.h> // hotonl
 
+#include <stdio.h>
+
 int	main(int ac, char **av)
 {
-	int	port;
+	int		port;
 	int		sockfd;
+	int		max_fd;
+	int		clientfd;
 	fd_set	activefd;
 	fd_set	readfd;
 	fd_set	writefd;
 	
-
 	if (ac != 2)
 	{
 		write (2, "Wrong number of arguments\n", 26);
@@ -36,7 +39,7 @@ int	main(int ac, char **av)
 	}
 	FD_SET(sockfd, &activefd);
 
-
+	printf("socket fd: %d\n", sockfd);
 
 	struct sockaddr_in servaddr; 
 	bzero(&servaddr, sizeof(servaddr)); 
@@ -56,6 +59,54 @@ int	main(int ac, char **av)
 		exit (1);
 	}
 
+	max_fd = 0;
+	while (1)
+	{
+		readfd = activefd;
+		writefd = activefd;
 
+		if (select(max_fd + 1, &readfd, &writefd, NULL, NULL) < 0)
+		{
+			write (2, "Fatal error\n", 12);
+			exit (1);
+		}
+
+		printf("max_fd: %d\n", max_fd);
+
+		for (int fd =0; fd <= max_fd; ++fd)
+		{
+			if (fd == sockfd)
+			{
+				struct sockaddr_in	clientaddr;
+				socklen_t			addrlen;
+				addrlen = sizeof (clientaddr);
+				clientfd = accept(sockfd, (struct sockaddr *)&servaddr, &addrlen);
+
+				printf("clientfd: %d\n", clientfd);
+
+				if (clientfd < 0)
+				{
+					// register client
+					break ;	
+				}
+			}
+			else
+			{
+				int	read_bytes;
+				char	buf_read[1001];
+
+				read_bytes = recv(fd, buf_read, 1000, 0);
+				if (read_bytes < 0)
+				{
+					// remove client
+					break ;
+				}
+				buf_read[read_bytes] = '\0';
+				// making message with str_join
+				// send message
+				write (1, buf_read, read_bytes);
+			}
+		}
+	}
 	return (0);
 }
