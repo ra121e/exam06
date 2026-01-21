@@ -134,6 +134,11 @@ int	main(int ac, char **av)
 
 	count = 0;
 	max_fd = sockfd;
+	for (int i = 0; i < 65536; ++i)
+	{
+		msgs[i] = NULL;
+		ids[i] = 0;
+	}
 	while (1)
 	{
 		readfd = activefd;
@@ -180,9 +185,14 @@ int	main(int ac, char **av)
 				char	buf_read[1001];
 
 				read_bytes = recv(fd, buf_read, 1000, 0);
-				if (read_bytes < 0)
+				if (read_bytes <= 0)
 				{
 					// remove client
+					sprintf(buf_write, "server: client %d just left\n", ids[fd]);
+					broadcast(fd, max_fd, &writefd, sockfd, buf_write);
+					free(msgs[fd]);
+					FD_CLR(fd, &activefd);
+					close(fd);
 					break ;
 				}
 				buf_read[read_bytes] = '\0';
