@@ -127,6 +127,11 @@ int	main(int ac, char **av)
 
 	count = 0;
 	max_fd = sockfd;
+	for (int i = 0; i < 65536; ++i)
+	{
+		ids[i] = 0;
+		msgs[i] = NULL;
+	}
 	while (1)
 	{
 		readfd = activefd;
