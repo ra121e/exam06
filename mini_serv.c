@@ -96,13 +96,6 @@ int	main(int ac, char **av)
 		exit (1);
 	}
 
-	port = atoi(av[1]);
-	if (!(port > 1024 && port < 49151))
-	{
-		write (2, "Fatal error\n", 12);
-		exit (1);
-	}
-
 	FD_ZERO(&activefd);
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0)
@@ -134,25 +127,16 @@ int	main(int ac, char **av)
 
 	count = 0;
 	max_fd = sockfd;
-	for (int i = 0; i < 65536; ++i)
-	{
-		msgs[i] = NULL;
-		ids[i] = 0;
-	}
 	while (1)
 	{
 		readfd = activefd;
 		writefd = activefd;
-
-//		printf("max_fd: %d\n", max_fd);
 
 		if (select(max_fd + 1, &readfd, &writefd, NULL, NULL) < 0)
 		{
 			write (2, "Fatal error\n", 12);
 			exit (1);
 		}
-
-//		printf("max_fd: %d\n", max_fd);
 
 		for (int fd = 0; fd <= max_fd; ++fd)
 		{
