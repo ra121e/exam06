@@ -58,12 +58,12 @@ void	broadcast(int exc_fd, int max_fd, fd_set *wfds, int listen_fd, char *str)
 {
 	for (int fd = 0; fd <= max_fd; ++fd)
 	{
-		if (FD_ISSET(fd, wfds) && fd != exc_fd && fd != listen_fd)
+		if (FD_ISSET(fd, wfds) && fd != exc_fd)
 			send(fd, str, strlen(str), 0);
 	}
 }
 
-void	send_msg(int fd, int id, int sockfd, char **buf, fd_set *activefd, int max_fd)
+void	send_msg(int fd, int id, int sockfd, char **buf, fd_set *writefd, int max_fd)
 {
 	char	*msg;
 
@@ -71,7 +71,7 @@ void	send_msg(int fd, int id, int sockfd, char **buf, fd_set *activefd, int max_
 	{
 		char	buf_write[1001];
 		sprintf(buf_write, "client %d: %s", id, msg);
-		broadcast(fd, max_fd, activefd, sockfd, buf_write);
+		broadcast(fd, max_fd, writefd, sockfd, buf_write);
 		free(msg);
 	}
 }
@@ -183,7 +183,7 @@ int	main(int ac, char **av)
 				// making message with str_join
 				msgs[fd] = str_join(msgs[fd], buf_read);
 				// send message
-				send_msg(fd, ids[fd], sockfd, &msgs[fd], &activefd, max_fd);
+				send_msg(fd, ids[fd], sockfd, &msgs[fd], &writefd, max_fd);
 				write (1, buf_read, read_bytes);
 			}
 		}
