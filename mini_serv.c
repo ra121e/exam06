@@ -8,6 +8,21 @@
 
 #include <stdio.h>
 
+typedef struct s_client {
+	int		id;
+	char	*msg;
+} t_client;
+
+typedef struct s_server {
+	int 		sockfd;
+	fd_set		activefd;
+	fd_set		readfd;
+	fd_set		writefd;
+	int			max_fd;
+	t_client	clients[65536];
+	int			count;
+} t_server;
+
 int extract_message(char **buf, char **msg)
 {
         char    *newbuf;
@@ -76,6 +91,21 @@ void	send_msg(int fd, int id, int sockfd, char **buf, fd_set *writefd, int max_f
 	}
 }
 
+void	init_server(t_server *server)
+{
+	server->sockfd = -1;
+	FD_ZERO(&server->activefd);
+	FD_ZERO(&server->readfd);
+	FD_ZERO(&server->writefd);
+	server->max_fd = -1;
+	server->count = 0;
+	for (int i = 0; i < 65536; ++i)
+	{
+		server->clients[i].id = -1;
+		server->clients[i].msg = NULL;
+	}
+}
+
 int	main(int ac, char **av)
 {
 	int		port;
@@ -89,6 +119,12 @@ int	main(int ac, char **av)
 	int		count;
 	char	buf_write[42];
 	char	*msgs[65536];
+
+	t_server *server;
+	server = malloc(sizeof (t_server));
+	if (!server)
+		return (1);
+
 
 	if (ac != 2)
 	{
