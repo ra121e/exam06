@@ -69,7 +69,7 @@ char *str_join(char *buf, char *add)
         strcat(newbuf, add);
         return (newbuf);
 }
-void	broadcast(int exc_fd, int max_fd, fd_set *wfds, int listen_fd, char *str)
+void	broadcast(t_server *server, int exc_fd, int max_fd, fd_set *wfds, int listen_fd, char *str)
 {
 	for (int fd = 0; fd <= max_fd; ++fd)
 	{
@@ -78,7 +78,7 @@ void	broadcast(int exc_fd, int max_fd, fd_set *wfds, int listen_fd, char *str)
 	}
 }
 
-void	send_msg(int fd, int id, int sockfd, char **buf, fd_set *writefd, int max_fd)
+void	send_msg(t_server *server, int fd, int id, int sockfd, char **buf, fd_set *writefd, int max_fd)
 {
 	char	*msg;
 
@@ -86,7 +86,7 @@ void	send_msg(int fd, int id, int sockfd, char **buf, fd_set *writefd, int max_f
 	{
 		char	buf_write[1001];
 		sprintf(buf_write, "client %d: %s", id, msg);
-		broadcast(fd, max_fd, writefd, sockfd, buf_write);
+		broadcast(server, fd, max_fd, writefd, server->sockfd, buf_write);
 		free(msg);
 	}
 }
@@ -133,15 +133,15 @@ int	main(int ac, char **av)
 	}
 
 	FD_ZERO(&activefd);
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd < 0)
+	server->sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (server->sockfd < 0)
 	{
 		write (2, "Fatal error\n", 12);
 		exit (1);
 	}
-	FD_SET(sockfd, &activefd);
+	FD_SET(server->sockfd, &activefd);
 
-	printf("socket fd: %d\n", sockfd);
+	printf("socket fd: %d\n", server->sockfd);
 
 	struct sockaddr_in servaddr;
 	bzero(&servaddr, sizeof(servaddr));
@@ -152,17 +152,17 @@ int	main(int ac, char **av)
 	servaddr.sin_port = htons(atoi(av[1]));
 
 	// Binding newly created socket to given IP and verification
-	if ((bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr))) != 0) {
+	if ((bind(server->sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr))) != 0) {
 		write (2, "Fatal error\n", 12);
 		exit (1);
 	}
-	if (listen(sockfd, SOMAXCONN) != 0) {
+	if (listen(server->sockfd, SOMAXCONN) != 0) {
 		write (2, "Fatal error\n", 12);
 		exit (1);
 	}
 
 	count = 0;
-	max_fd = sockfd;
+	max_fd = server->sockfd;
 	for (int i = 0; i < 65536; ++i)
 	{
 		ids[i] = 0;
@@ -184,12 +184,12 @@ int	main(int ac, char **av)
 			if (!(FD_ISSET(fd, &readfd)))
 				continue ;
 
-			if (fd == sockfd)
+			if (fd == server->sockfd)
 			{
 				struct sockaddr_in	clientaddr;
 				socklen_t			addrlen;
 				addrlen = sizeof (clientaddr);
-				clientfd = accept(sockfd, (struct sockaddr *)&clientaddr, &addrlen);
+				clientfd = accept(server->sockfd, (struct sockaddr *)&clientaddr, &addrlen);
 
 				printf("clientfd: %d\n", clientfd);
 
@@ -200,7 +200,7 @@ int	main(int ac, char **av)
 					max_fd = clientfd > max_fd ? clientfd : max_fd;
 					ids[clientfd] = count++;
 					sprintf(buf_write, "server: client %d just arrived\n", ids[clientfd]);
-					broadcast(fd, max_fd, &writefd, sockfd, buf_write);
+					broadcast(server, fd, max_fd, &writefd, server->sockfd, buf_write);
 					break ;
 				}
 			}
@@ -214,7 +214,7 @@ int	main(int ac, char **av)
 				{
 					// remove client
 					sprintf(buf_write, "server: client %d just left\n", ids[fd]);
-					broadcast(fd, max_fd, &writefd, sockfd, buf_write);
+					broadcast(server, fd, max_fd, &writefd, server->sockfd, buf_write);
 					free(msgs[fd]);
 					FD_CLR(fd, &activefd);
 					close(fd);
@@ -224,7 +224,7 @@ int	main(int ac, char **av)
 				// making message with str_join
 				msgs[fd] = str_join(msgs[fd], buf_read);
 				// send message
-				send_msg(fd, ids[fd], sockfd, &msgs[fd], &writefd, max_fd);
+				send_msg(server, fd, ids[fd], server->sockfd, &msgs[fd], &writefd, max_fd);
 				write (1, buf_read, read_bytes);
 			}
 		}
