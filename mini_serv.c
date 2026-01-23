@@ -161,7 +161,7 @@ int	main(int ac, char **av)
 		exit (1);
 	}
 
-	count = 0;
+	server->count = 0;
 	server->max_fd = server->sockfd;
 	for (int i = 0; i < 65536; ++i)
 	{
@@ -198,7 +198,7 @@ int	main(int ac, char **av)
 					// register client
 					FD_SET(clientfd, &activefd);
 					server->max_fd = clientfd > server->max_fd ? clientfd : server->max_fd;
-					ids[clientfd] = count++;
+					ids[clientfd] = server->count++;
 					sprintf(buf_write, "server: client %d just arrived\n", ids[clientfd]);
 					broadcast(server, fd, server->max_fd, &writefd, server->sockfd, buf_write);
 					break ;
