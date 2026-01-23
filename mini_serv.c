@@ -71,7 +71,7 @@ char *str_join(char *buf, char *add)
 }
 void	broadcast(t_server *server, int exc_fd, int max_fd, fd_set *wfds, int listen_fd, char *str)
 {
-	for (int fd = 0; fd <= max_fd; ++fd)
+	for (int fd = 0; fd <= server->max_fd; ++fd)
 	{
 		if (FD_ISSET(fd, wfds) && fd != exc_fd)
 			send(fd, str, strlen(str), 0);
@@ -86,7 +86,7 @@ void	send_msg(t_server *server, int fd, int id, int sockfd, char **buf, fd_set *
 	{
 		char	buf_write[1001];
 		sprintf(buf_write, "client %d: %s", id, msg);
-		broadcast(server, fd, max_fd, writefd, server->sockfd, buf_write);
+		broadcast(server, fd, server->max_fd, writefd, server->sockfd, buf_write);
 		free(msg);
 	}
 }
@@ -162,7 +162,7 @@ int	main(int ac, char **av)
 	}
 
 	count = 0;
-	max_fd = server->sockfd;
+	server->max_fd = server->sockfd;
 	for (int i = 0; i < 65536; ++i)
 	{
 		ids[i] = 0;
@@ -173,13 +173,13 @@ int	main(int ac, char **av)
 		readfd = activefd;
 		writefd = activefd;
 
-		if (select(max_fd + 1, &readfd, &writefd, NULL, NULL) < 0)
+		if (select(server->max_fd + 1, &readfd, &writefd, NULL, NULL) < 0)
 		{
 			write (2, "Fatal error\n", 12);
 			exit (1);
 		}
 
-		for (int fd = 0; fd <= max_fd; ++fd)
+		for (int fd = 0; fd <= server->max_fd; ++fd)
 		{
 			if (!(FD_ISSET(fd, &readfd)))
 				continue ;
@@ -197,10 +197,10 @@ int	main(int ac, char **av)
 				{
 					// register client
 					FD_SET(clientfd, &activefd);
-					max_fd = clientfd > max_fd ? clientfd : max_fd;
+					server->max_fd = clientfd > server->max_fd ? clientfd : server->max_fd;
 					ids[clientfd] = count++;
 					sprintf(buf_write, "server: client %d just arrived\n", ids[clientfd]);
-					broadcast(server, fd, max_fd, &writefd, server->sockfd, buf_write);
+					broadcast(server, fd, server->max_fd, &writefd, server->sockfd, buf_write);
 					break ;
 				}
 			}
@@ -214,7 +214,7 @@ int	main(int ac, char **av)
 				{
 					// remove client
 					sprintf(buf_write, "server: client %d just left\n", ids[fd]);
-					broadcast(server, fd, max_fd, &writefd, server->sockfd, buf_write);
+					broadcast(server, fd, server->max_fd, &writefd, server->sockfd, buf_write);
 					free(msgs[fd]);
 					FD_CLR(fd, &activefd);
 					close(fd);
@@ -224,7 +224,7 @@ int	main(int ac, char **av)
 				// making message with str_join
 				msgs[fd] = str_join(msgs[fd], buf_read);
 				// send message
-				send_msg(server, fd, ids[fd], server->sockfd, &msgs[fd], &writefd, max_fd);
+				send_msg(server, fd, ids[fd], server->sockfd, &msgs[fd], &writefd, server->max_fd);
 				write (1, buf_read, read_bytes);
 			}
 		}
