@@ -125,6 +125,7 @@ int	main(int ac, char **av)
 	if (!server)
 		return (1);
 
+	init_server(server);
 
 	if (ac != 2)
 	{
@@ -161,13 +162,13 @@ int	main(int ac, char **av)
 		exit (1);
 	}
 
-	server->count = 0;
+//	server->count = 0;
 	server->max_fd = server->sockfd;
-	for (int i = 0; i < 65536; ++i)
-	{
-		ids[i] = 0;
-		msgs[i] = NULL;
-	}
+//	for (int i = 0; i < 65536; ++i)
+//	{
+//		ids[i] = 0;
+//		msgs[i] = NULL;
+//	}
 	while (1)
 	{
 		readfd = activefd;
@@ -198,8 +199,8 @@ int	main(int ac, char **av)
 					// register client
 					FD_SET(clientfd, &activefd);
 					server->max_fd = clientfd > server->max_fd ? clientfd : server->max_fd;
-					ids[clientfd] = server->count++;
-					sprintf(buf_write, "server: client %d just arrived\n", ids[clientfd]);
+					server->clients[clientfd].id = server->count++;
+					sprintf(buf_write, "server: client %d just arrived\n", server->clients[clientfd].id);
 					broadcast(server, fd, server->max_fd, &writefd, server->sockfd, buf_write);
 					break ;
 				}
@@ -213,7 +214,7 @@ int	main(int ac, char **av)
 				if (read_bytes <= 0)
 				{
 					// remove client
-					sprintf(buf_write, "server: client %d just left\n", ids[fd]);
+					sprintf(buf_write, "server: client %d just left\n", server->clients[fd].id);
 					broadcast(server, fd, server->max_fd, &writefd, server->sockfd, buf_write);
 					free(msgs[fd]);
 					FD_CLR(fd, &activefd);
@@ -224,7 +225,7 @@ int	main(int ac, char **av)
 				// making message with str_join
 				msgs[fd] = str_join(msgs[fd], buf_read);
 				// send message
-				send_msg(server, fd, ids[fd], server->sockfd, &msgs[fd], &writefd, server->max_fd);
+				send_msg(server, fd, server->clients[fd].id, server->sockfd, &msgs[fd], &writefd, server->max_fd);
 				write (1, buf_read, read_bytes);
 			}
 		}
