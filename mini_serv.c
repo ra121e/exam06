@@ -4,9 +4,8 @@
 #include <sys/socket.h> // socket, SOMAXCONN
 #include <strings.h> // bzero
 #include <string.h> //strlen
-#include <arpa/inet.h> // hotonl
-
-#include <stdio.h>
+#include <arpa/inet.h> // htonl
+#include <stdio.h> // sprintf
 
 typedef struct s_client {
 	int		id;
@@ -108,18 +107,6 @@ void	init_server(t_server *server)
 
 int	main(int ac, char **av)
 {
-	int		port;
-	int		sockfd;
-	int		max_fd;
-	int		clientfd;
-	fd_set	activefd;
-	fd_set	readfd;
-	fd_set	writefd;
-	int		ids[65536];
-	int		count;
-	char	buf_write[42];
-	char	*msgs[65536];
-
 	t_server *server;
 	server = malloc(sizeof (t_server));
 	if (!server)
@@ -142,8 +129,6 @@ int	main(int ac, char **av)
 	}
 	FD_SET(server->sockfd, &server->activefd);
 
-	printf("socket fd: %d\n", server->sockfd);
-
 	struct sockaddr_in servaddr;
 	bzero(&servaddr, sizeof(servaddr));
 
@@ -162,13 +147,7 @@ int	main(int ac, char **av)
 		exit (1);
 	}
 
-//	server->count = 0;
 	server->max_fd = server->sockfd;
-//	for (int i = 0; i < 65536; ++i)
-//	{
-//		ids[i] = 0;
-//		msgs[i] = NULL;
-//	}
 	while (1)
 	{
 		server->readfd = server->activefd;
@@ -187,15 +166,15 @@ int	main(int ac, char **av)
 
 			if (fd == server->sockfd)
 			{
+				int		clientfd;
 				struct sockaddr_in	clientaddr;
 				socklen_t			addrlen;
 				addrlen = sizeof (clientaddr);
 				clientfd = accept(server->sockfd, (struct sockaddr *)&clientaddr, &addrlen);
 
-				printf("clientfd: %d\n", clientfd);
-
 				if (clientfd >= 0)
 				{
+					char	buf_write[42];
 					// register client
 					FD_SET(clientfd, &server->activefd);
 					server->max_fd = clientfd > server->max_fd ? clientfd : server->max_fd;
@@ -213,6 +192,7 @@ int	main(int ac, char **av)
 				read_bytes = recv(fd, buf_read, 1000, 0);
 				if (read_bytes <= 0)
 				{
+					char	buf_write[42];
 					// remove client
 					sprintf(buf_write, "server: client %d just left\n", server->clients[fd].id);
 					broadcast(server, fd, buf_write);
