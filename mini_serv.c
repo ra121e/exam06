@@ -69,24 +69,24 @@ char *str_join(char *buf, char *add)
         strcat(newbuf, add);
         return (newbuf);
 }
-void	broadcast(t_server *server, int exc_fd, int max_fd, fd_set *wfds, int listen_fd, char *str)
+void	broadcast(t_server *server, int exc_fd, char *str)
 {
 	for (int fd = 0; fd <= server->max_fd; ++fd)
 	{
-		if (FD_ISSET(fd, wfds) && fd != exc_fd)
+		if (FD_ISSET(fd, &server->writefd) && fd != exc_fd)
 			send(fd, str, strlen(str), 0);
 	}
 }
 
-void	send_msg(t_server *server, int fd, int id, int sockfd, char **buf, fd_set *writefd, int max_fd)
+void	send_msg(t_server *server, int fd)
 {
 	char	*msg;
 
-	while (extract_message(buf, &msg))
+	while (extract_message(&server->clients[fd].msg, &msg))
 	{
 		char	buf_write[1001];
-		sprintf(buf_write, "client %d: %s", id, msg);
-		broadcast(server, fd, server->max_fd, &server->writefd, server->sockfd, buf_write);
+		sprintf(buf_write, "client %d: %s", server->clients[fd].id, msg);
+		broadcast(server, fd, buf_write);
 		free(msg);
 	}
 }
@@ -201,7 +201,7 @@ int	main(int ac, char **av)
 					server->max_fd = clientfd > server->max_fd ? clientfd : server->max_fd;
 					server->clients[clientfd].id = server->count++;
 					sprintf(buf_write, "server: client %d just arrived\n", server->clients[clientfd].id);
-					broadcast(server, fd, server->max_fd, &server->writefd, server->sockfd, buf_write);
+					broadcast(server, fd, buf_write);
 					break ;
 				}
 			}
@@ -215,7 +215,7 @@ int	main(int ac, char **av)
 				{
 					// remove client
 					sprintf(buf_write, "server: client %d just left\n", server->clients[fd].id);
-					broadcast(server, fd, server->max_fd, &server->writefd, server->sockfd, buf_write);
+					broadcast(server, fd, buf_write);
 					free(server->clients[fd].msg);
 					FD_CLR(fd, &server->activefd);
 					close(fd);
@@ -225,7 +225,7 @@ int	main(int ac, char **av)
 				// making message with str_join
 				server->clients[fd].msg = str_join(server->clients[fd].msg, buf_read);
 				// send message
-				send_msg(server, fd, server->clients[fd].id, server->sockfd, &server->clients[fd].msg, &server->writefd, server->max_fd);
+				send_msg(server, fd);
 				write (1, buf_read, read_bytes);
 			}
 		}
