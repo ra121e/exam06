@@ -67,6 +67,7 @@ fd_set activefd, readfd, writefd;
 char    *msg[FD_SETSIZE];
 int     id[FD_SETSIZE];
 int     maxfd;
+int     count;
 
 
 int main(int ac, char **av)
@@ -115,6 +116,16 @@ int main(int ac, char **av)
                 struct sockaddr_in  clientaddr;
                 socklen_t           addrlen = sizeof (clientaddr);
                 int clientfd = accept(fd, (struct sockaddr *)&clientaddr, addrlen);
+
+                if (clientfd >= 0)
+                {
+                    char    buf_write[1001];
+                    FD_SET(clientfd, &activefd);
+                    maxfd = clientfd > maxfd ? clientfd : maxfd;
+                    id[clientfd] = count++;
+                    sprintf(buf_write, "server: client %d just arrived\n", id[clientfd]);
+                    
+                }
             }
             else
             {
