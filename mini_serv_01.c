@@ -108,6 +108,19 @@ int main(int ac, char **av)
         if (select(maxfd + 1, &readfd, &writefd, NULL, NULL) < 0)
             fatal_error;
         
+        for (int fd; fd < maxfd; ++fd)
+        {
+            if (fd == sockfd)
+            {
+                struct sockaddr_in  clientaddr;
+                socklen_t           addrlen = sizeof (clientaddr);
+                int clientfd = accept(fd, (struct sockaddr *)&clientaddr, addrlen);
+            }
+            else
+            {
+
+            }
+        }
     }
 
     return (0);
