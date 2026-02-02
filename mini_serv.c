@@ -22,6 +22,10 @@ typedef struct s_server {
 	int			count;
 } t_server;
 
+t_server g_server;
+t_server *server = &g_server;
+
+
 int extract_message(char **buf, char **msg)
 {
         char    *newbuf;
@@ -107,12 +111,12 @@ void	init_server(t_server *server)
 
 int	main(int ac, char **av)
 {
-	t_server *server;
-	server = malloc(sizeof (t_server));
-	if (!server)
-		return (1);
+	// t_server *server;
+	// server = malloc(sizeof (t_server));
+	// if (!server)
+	// 	return (1);
 
-	init_server(server);
+	// init_server(server);
 
 	if (ac != 2)
 	{
