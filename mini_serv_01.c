@@ -2,7 +2,9 @@
 #include <string.h> // strlen, strcpy, strcat
 #include <stdlib.h> // malloc, calloc, free
 #include <sys/socket.h> // socket, bind, listen
-#include <arpa/inet.h> // sockaddr_in, hton
+// #include <arpa/inet.h> // sockaddr_in, hton
+#include <netinet/in.h>
+#include <sys/select.h> // fd_set, select
 
 
 
@@ -61,7 +63,9 @@ void    fatal_error(void)
 }
 
 int sockfd;
-
+fd_set activefd, readfd, writefd;
+char    *msg[FD_SETSIZE];
+int     id[FD_SETSIZE];
 
 
 int main(int ac, char **av)
@@ -75,6 +79,9 @@ int main(int ac, char **av)
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0); 
         fatal_error;
+    
+    FD_ZERO(&activefd);
+    FD_SET(sockfd, &activefd);
     
     struct sockaddr_in servaddr;
 	bzero(&servaddr, sizeof(servaddr)); 
