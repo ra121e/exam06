@@ -66,6 +66,7 @@ int sockfd;
 fd_set activefd, readfd, writefd;
 char    *msg[FD_SETSIZE];
 int     id[FD_SETSIZE];
+int     maxfd;
 
 
 int main(int ac, char **av)
@@ -96,6 +97,18 @@ int main(int ac, char **av)
         fatal_error;
 	if (listen(sockfd, 10) != 0)
         fatal_error;
+
+
+    maxfd = sockfd;
+    while (1)
+    {
+        readfd = activefd;
+        writefd = activefd;
+
+        if (select(maxfd + 1, &readfd, &writefd, NULL, NULL) < 0)
+            fatal_error;
+        
+    }
 
     return (0);
 }
