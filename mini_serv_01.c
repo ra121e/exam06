@@ -62,6 +62,17 @@ void    fatal_error(void)
     exit (1);
 }
 
+void	broadcast(int sender_fd, char *str)
+{
+	for (int fd = 0; fd <= maxfd; ++fd)
+	{
+		if (FD_ISSET(fd, &writefd) && fd != sender_fd)
+		{
+			send(fd, str, strlen(str), 0);
+		}
+	}
+}
+
 int sockfd;
 fd_set activefd, readfd, writefd;
 char    *msg[FD_SETSIZE];
@@ -79,22 +90,22 @@ int main(int ac, char **av)
     }
 
 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0); 
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
         fatal_error;
-    
+
     FD_ZERO(&activefd);
     FD_SET(sockfd, &activefd);
-    
+
     struct sockaddr_in servaddr;
-	bzero(&servaddr, sizeof(servaddr)); 
+	bzero(&servaddr, sizeof(servaddr));
 
-	// assign IP, PORT 
-	servaddr.sin_family = AF_INET; 
+	// assign IP, PORT
+	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(2130706433); //127.0.0.1
-	servaddr.sin_port = htons(atoi(av[1])); 
+	servaddr.sin_port = htons(atoi(av[1]));
 
-	// Binding newly created socket to given IP and verification 
-	if ((bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr))) != 0) 
+	// Binding newly created socket to given IP and verification
+	if ((bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr))) != 0)
         fatal_error;
 	if (listen(sockfd, 10) != 0)
         fatal_error;
@@ -108,8 +119,8 @@ int main(int ac, char **av)
 
         if (select(maxfd + 1, &readfd, &writefd, NULL, NULL) < 0)
             fatal_error;
-        
-        for (int fd; fd < maxfd; ++fd)
+
+        for (int fd = 0; fd <= maxfd; ++fd)
         {
             if (fd == sockfd)
             {
@@ -124,7 +135,8 @@ int main(int ac, char **av)
                     maxfd = clientfd > maxfd ? clientfd : maxfd;
                     id[clientfd] = count++;
                     sprintf(buf_write, "server: client %d just arrived\n", id[clientfd]);
-                    
+                    broadcast(fd, buf_write);
+					break ;
                 }
             }
             else
