@@ -10,7 +10,7 @@
 
 int sockfd;
 fd_set activefd, readfd, writefd;
-char    *msg[FD_SETSIZE];
+char    *msgs[FD_SETSIZE];
 int     id[FD_SETSIZE];
 int     maxfd;
 int     count;
@@ -80,7 +80,18 @@ void	broadcast(int sender_fd, char *str)
 	}
 }
 
+void	send_msg(int fd)
+{
+	char	*msg;
 
+	while (extract_message(&msgs[fd],&msg))
+	{
+		char	buf_write[1001];
+		sprintf(buf_write, "client %d: %s", id[fd], msg);
+		broadcast(fd, buf_write);
+		free(msg);
+	}
+}
 
 int main(int ac, char **av)
 {
@@ -91,8 +102,9 @@ int main(int ac, char **av)
     }
 
 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-        fatal_error;
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (sockfd < 0)
+		fatal_error();
 
     FD_ZERO(&activefd);
     FD_SET(sockfd, &activefd);
@@ -106,10 +118,10 @@ int main(int ac, char **av)
 	servaddr.sin_port = htons(atoi(av[1]));
 
 	// Binding newly created socket to given IP and verification
-	if ((bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr))) != 0)
-        fatal_error;
+	if (bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr)) != 0)
+		fatal_error();
 	if (listen(sockfd, 10) != 0)
-        fatal_error;
+		fatal_error();
 
 
     maxfd = sockfd;
@@ -121,10 +133,13 @@ int main(int ac, char **av)
         if (select(maxfd + 1, &readfd, &writefd, NULL, NULL) < 0)
             fatal_error;
 
-        for (int fd = 0; fd <= maxfd; ++fd)
-        {
-            if (fd == sockfd)
-            {
+		for (int fd = 0; fd <= maxfd; ++fd)
+		{
+			if (!FD_ISSET(fd, &readfd))
+				continue;
+
+			if (fd == sockfd)
+			{
                 struct sockaddr_in  clientaddr;
                 socklen_t           addrlen = sizeof (clientaddr);
                 int clientfd = accept(fd, (struct sockaddr *)&clientaddr, &addrlen);
@@ -142,7 +157,23 @@ int main(int ac, char **av)
             }
             else
             {
+				int	 read_bytes;
+				char buf_read[1001];
 
+				read_bytes = recv(fd, buf_read, 1000, 0);
+				if (read_bytes <= 0)
+				{
+					char	buf_write[42];
+					sprintf(buf_write, "server: client %d just left\n", id[fd]);
+					broadcast(fd, buf_write);
+					free(msgs[fd]);
+					FD_CLR(fd, &activefd);
+					close(fd);
+					break;
+				}
+				buf_read[read_bytes] = '\0';
+				msgs[fd] = str_join(msgs[fd], buf_read);
+				send_msg(fd);
             }
         }
     }
