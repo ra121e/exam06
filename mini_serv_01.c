@@ -148,6 +148,7 @@ int main(int ac, char **av)
                 {
                     char    buf_write[1001];
                     FD_SET(clientfd, &activefd);
+					msgs[clientfd] = NULL;
                     maxfd = clientfd > maxfd ? clientfd : maxfd;
                     id[clientfd] = count++;
                     sprintf(buf_write, "server: client %d just arrived\n", id[clientfd]);
