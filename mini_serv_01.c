@@ -3,8 +3,17 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/select.h>
+#include <stdio.h>
 
 int	sockfd;
+fd_set	activefd;
+fd_set	readfd;
+fd_set	writefd;
+int	count;
+int	id[FD_SETSIZE];
+char	*msgs[FD_SETSIZE];
+int	maxfd;
 
 int extract_message(char **buf, char **msg)
 {
@@ -70,7 +79,8 @@ int	main(int ac, char **av)
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd == -1)
 		fatal_error();
-
+	FD_ZERO(&activefd);
+	FD_SET(sockfd, &activefd);
 	struct sockaddr_in	servaddr;
 	bzero(&servaddr, sizeof(servaddr));
 
@@ -84,5 +94,43 @@ int	main(int ac, char **av)
 		fatal_error();
 	if (listen(sockfd, 10) != 0)
 		fatal_error();
+
+	maxfd = sockfd;
+	while (1)
+	{
+		readfd = activefd;
+		writefd = activefd;
+
+		if (select(maxfd + 1, &readfd, &writefd, NULL, NULL) < 0)
+			fatal_error();
+
+		for (int fd = 0; fd <=maxfd; ++fd)
+		{
+			if (!FD_ISSET(fd, &readfd))
+				continue ;
+			if (fd == sockfd)
+			{
+				struct sockaddr_in	clientaddr;
+				socklen_t	addrlen;
+				int clientfd = accept(fd, (struct sockaddr *)&clientaddr, &addrlen);
+				if (clientfd >= 0)
+				{
+					char buf_write[1001];
+					maxfd = clientfd > maxfd ? clientfd : maxfd;
+					FD_SET(clientfd, &activefd);
+					id[clientfd] = count++;
+					msgs[clientfd] = NULL;
+					sprintf(buf_write, "server: client %d just arrived\n", id[clientfd]);
+
+					break ;
+				}
+
+			}
+			else
+			{
+
+			}
+		}
+	}
 	return (0);
 }
