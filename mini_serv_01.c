@@ -5,8 +5,15 @@
 // #include <arpa/inet.h> // sockaddr_in, hton
 #include <netinet/in.h>
 #include <sys/select.h> // fd_set, select
+#include <stdio.h> // sprintf
 
 
+int sockfd;
+fd_set activefd, readfd, writefd;
+char    *msg[FD_SETSIZE];
+int     id[FD_SETSIZE];
+int     maxfd;
+int     count;
 
 int extract_message(char **buf, char **msg)
 {
@@ -73,12 +80,6 @@ void	broadcast(int sender_fd, char *str)
 	}
 }
 
-int sockfd;
-fd_set activefd, readfd, writefd;
-char    *msg[FD_SETSIZE];
-int     id[FD_SETSIZE];
-int     maxfd;
-int     count;
 
 
 int main(int ac, char **av)
@@ -126,7 +127,7 @@ int main(int ac, char **av)
             {
                 struct sockaddr_in  clientaddr;
                 socklen_t           addrlen = sizeof (clientaddr);
-                int clientfd = accept(fd, (struct sockaddr *)&clientaddr, addrlen);
+                int clientfd = accept(fd, (struct sockaddr *)&clientaddr, &addrlen);
 
                 if (clientfd >= 0)
                 {
