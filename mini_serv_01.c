@@ -68,6 +68,15 @@ void	fatal_error(void)
 	exit (1);
 }
 
+void	broadcast(int sender_fd, char *str)
+{
+	for (int fd = 0; fd < maxfd; ++fd)
+	{
+		if (FD_ISSET(fd, &writefd) && fd != sender_fd)
+			send(fd, str, strlen(str), 0);
+	}
+}
+
 int	main(int ac, char **av)
 {
 	if (ac != 2)
@@ -121,7 +130,7 @@ int	main(int ac, char **av)
 					id[clientfd] = count++;
 					msgs[clientfd] = NULL;
 					sprintf(buf_write, "server: client %d just arrived\n", id[clientfd]);
-
+					broadcast(clientfd, buf_write);
 					break ;
 				}
 
