@@ -70,10 +70,23 @@ void	fatal_error(void)
 
 void	broadcast(int sender_fd, char *str)
 {
-	for (int fd = 0; fd < maxfd; ++fd)
+	for (int fd = 0; fd <= maxfd; ++fd)
 	{
 		if (FD_ISSET(fd, &writefd) && fd != sender_fd)
 			send(fd, str, strlen(str), 0);
+	}
+}
+
+void	send_msg(int fd)
+{
+	char	*msg;
+
+	while (extract_message(&msgs[fd], &msg))
+	{
+		char	buf_write[1001];
+		sprintf(buf_write, "client %d: %s", id[fd], msg);
+		broadcast(fd, buf_write);
+		free (msg);
 	}
 }
 
@@ -120,7 +133,7 @@ int	main(int ac, char **av)
 			if (fd == sockfd)
 			{
 				struct sockaddr_in	clientaddr;
-				socklen_t	addrlen;
+				socklen_t	addrlen = sizeof (clientaddr);
 				int clientfd = accept(fd, (struct sockaddr *)&clientaddr, &addrlen);
 				if (clientfd >= 0)
 				{
@@ -137,7 +150,22 @@ int	main(int ac, char **av)
 			}
 			else
 			{
-
+				int	read_bytes;
+				char	buf_read[1001];
+				read_bytes = recv(fd, buf_read, 1000, 0);
+				if (read_bytes <= 0)
+				{
+					char	buf_read[42];
+					FD_CLR(fd, &activefd);
+					free (msgs[fd]);
+					close (fd);
+					sprintf(buf_read, "server: client %d just left\n", id[fd]);
+					broadcast(fd, buf_read);
+					break ;
+				}
+				buf_read[read_bytes] = '\0';
+				msgs[fd] = str_join(msgs[fd], buf_read);
+				send_msg(fd);
 			}
 		}
 	}
