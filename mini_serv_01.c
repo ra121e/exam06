@@ -84,8 +84,9 @@ void	send_msg(int fd)
 	while (extract_message(&msgs[fd], &msg))
 	{
 		char	buf_write[1001];
-		sprintf(buf_write, "client %d: %s", id[fd], msg);
+		sprintf(buf_write, "client %d: ", id[fd]);
 		broadcast(fd, buf_write);
+		broadcast(fd, msg);
 		free (msg);
 	}
 }
